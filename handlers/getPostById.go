@@ -19,9 +19,9 @@ func GetPostById(ctx context.Context, dynamoClient *dynamodb.Client, id string) 
 		return nil, fmt.Errorf("error building expression: %w", err)
 	}
 
-	result, err := dynamoClient.Query(ctx, &dynamodb.QueryInput{
+	result, err := dynamoClient.Scan(ctx, &dynamodb.ScanInput{
 		TableName:                 &tableName,
-		KeyConditionExpression:    expr.Filter(),
+		FilterExpression:          expr.Filter(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 	})
