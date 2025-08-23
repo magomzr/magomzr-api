@@ -23,8 +23,10 @@ func GetPostsByTag(ctx context.Context, dynamoClient *dynamodb.Client, tag strin
 	}
 
 	result, err := dynamoClient.Scan(ctx, &dynamodb.ScanInput{
-		TableName:        &tableName,
-		FilterExpression: expr.Filter(),
+		TableName:                 &tableName,
+		FilterExpression:          expr.Filter(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error scanning DynamoDB: %w", err)
