@@ -23,3 +23,5 @@ type Info struct {
 	Title string `json:"title"`
 	ID    string `json:"id"`
 }
+
+type Tags map[string]int

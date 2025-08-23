@@ -58,6 +58,20 @@ func getPostById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetTags(w http.ResponseWriter, r *http.Request) {
+	tags, err := handlers.GetTags(r.Context(), dynamoClient)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error getting tags: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(tags); err != nil {
+		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		return
+	}
+}
+
 func getPostsByTag(w http.ResponseWriter, r *http.Request) {
 	tag := chi.URLParam(r, "tag")
 	posts, err := handlers.GetPostsByTag(r.Context(), dynamoClient, tag)
@@ -81,6 +95,7 @@ func buildRouter() *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/posts", getAllPosts)
 	r.Get("/posts/{id}", getPostById)
+	r.Get("/tags", GetTags)
 	r.Get("/tags/{tag}", getPostsByTag)
 	r.Post("/posts", createPost)
 	return r
