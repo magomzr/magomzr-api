@@ -10,7 +10,9 @@ import (
 	"github.com/magomzr/magomzr-api/models"
 )
 
-func GetPostsByTag(ctx context.Context, dynamoClient *dynamodb.Client, tag string) ([]models.Post, error) {
+// To avoid returning all posts data, this method just maps
+// the relevant fields using the Card struct.
+func GetPostsByTag(ctx context.Context, dynamoClient *dynamodb.Client, tag string) ([]models.Card, error) {
 	tableName := "posts"
 
 	draftFilter := expression.Name("isDraft").Equal(expression.Value(false))
@@ -32,11 +34,11 @@ func GetPostsByTag(ctx context.Context, dynamoClient *dynamodb.Client, tag strin
 		return nil, fmt.Errorf("error scanning DynamoDB: %w", err)
 	}
 
-	var posts []models.Post
-	err = attributevalue.UnmarshalListOfMaps(result.Items, &posts)
+	var cards []models.Card
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &cards)
 	if err != nil {
 		return nil, fmt.Errorf("error unmarshaling posts: %w", err)
 	}
 
-	return posts, nil
+	return cards, nil
 }

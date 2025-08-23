@@ -1,18 +1,22 @@
 package models
 
 type Post struct {
-	ID           string   `json:"id"`
-	Author       string   `json:"author"`
-	Content      string   `json:"content"`
-	CreateDate   string   `json:"createDate"`
-	IsDraft      bool     `json:"isDraft"`
-	Layout       string   `json:"layout"`
-	ModifiedDate string   `json:"modifiedDate"`
-	Summary      string   `json:"summary"`
-	Tags         []string `json:"tags"`
-	Title        string   `json:"title"`
-	Previous     Info     `json:"previous"`
-	Next         Info     `json:"next"`
+	Card
+	Author       string `json:"author"`
+	Content      string `json:"content"`
+	IsDraft      bool   `json:"isDraft"`
+	Layout       string `json:"layout"`
+	ModifiedDate string `json:"modifiedDate"`
+	Previous     Info   `json:"previous"`
+	Next         Info   `json:"next"`
+}
+
+type Card struct {
+	ID         string   `json:"id"`
+	CreateDate string   `json:"createDate"`
+	Title      string   `json:"title"`
+	Summary    string   `json:"summary"`
+	Tags       []string `json:"tags"`
 }
 
 type Info struct {

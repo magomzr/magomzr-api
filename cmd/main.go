@@ -27,15 +27,32 @@ func init() {
 	dynamoClient = dynamodb.NewFromConfig(cfg)
 }
 
-func getPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := handlers.GetAllPosts(r.Context(), dynamoClient)
+// To avoid returning all posts data, this method just maps
+// the relevant fields using the Card struct.
+func getAllPosts(w http.ResponseWriter, r *http.Request) {
+	cards, err := handlers.GetAllPosts(r.Context(), dynamoClient)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("error obteniendo posts: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("error getting cards: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(posts); err != nil {
+	if err := json.NewEncoder(w).Encode(cards); err != nil {
+		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func getPostById(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	post, err := handlers.GetPostById(r.Context(), dynamoClient, id)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error getting post: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(post); err != nil {
 		http.Error(w, "error encoding response", http.StatusInternalServerError)
 		return
 	}
@@ -60,17 +77,12 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Post creado")
 }
 
-func getPostByID(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	fmt.Fprintf(w, "Detalle del post %s", id)
-}
-
 func buildRouter() *chi.Mux {
 	r := chi.NewRouter()
-	r.Get("/posts", getPosts)
+	r.Get("/posts", getAllPosts)
+	r.Get("/posts/{id}", getPostById)
 	r.Get("/tags/{tag}", getPostsByTag)
 	r.Post("/posts", createPost)
-	r.Get("/posts/{id}", getPostByID)
 	return r
 }
 
