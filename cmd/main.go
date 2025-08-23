@@ -11,11 +11,9 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/go-chi/chi/v5"
-
-	"github.com/magomzr/magomzr-api/models"
+	"github.com/magomzr/magomzr-api/handlers"
 )
 
 var dynamoClient *dynamodb.Client
@@ -29,35 +27,31 @@ func init() {
 	dynamoClient = dynamodb.NewFromConfig(cfg)
 }
 
-func getAllPosts(ctx context.Context) ([]models.Post, error) {
-	tableName := "posts"
-
-	result, err := dynamoClient.Scan(ctx, &dynamodb.ScanInput{
-		TableName: &tableName,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error scanning DynamoDB: %w", err)
-	}
-
-	var posts []models.Post
-	err = attributevalue.UnmarshalListOfMaps(result.Items, &posts)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling posts: %w", err)
-	}
-
-	return posts, nil
-}
-
 func getPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := getAllPosts(r.Context())
+	posts, err := handlers.GetAllPosts(r.Context(), dynamoClient)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error obteniendo posts: %v", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("error obteniendo posts: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(posts); err != nil {
-		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		return
+	}
+}
+
+func getPostsByTag(w http.ResponseWriter, r *http.Request) {
+	tag := chi.URLParam(r, "tag")
+	posts, err := handlers.GetPostsByTag(r.Context(), dynamoClient, tag)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error obteniendo posts: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(posts); err != nil {
+		http.Error(w, "error encoding response", http.StatusInternalServerError)
 		return
 	}
 }
@@ -74,6 +68,7 @@ func getPostByID(w http.ResponseWriter, r *http.Request) {
 func buildRouter() *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/posts", getPosts)
+	r.Get("/tags/{tag}", getPostsByTag)
 	r.Post("/posts", createPost)
 	r.Get("/posts/{id}", getPostByID)
 	return r
