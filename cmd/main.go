@@ -2,17 +2,64 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/magomzr/magomzr-api/models"
 )
 
+var dynamoClient *dynamodb.Client
+
+func init() {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		log.Fatalf("error loading AWS config: %v", err)
+	}
+
+	dynamoClient = dynamodb.NewFromConfig(cfg)
+}
+
+func getAllPosts(ctx context.Context) ([]models.Post, error) {
+	tableName := "posts"
+
+	result, err := dynamoClient.Scan(ctx, &dynamodb.ScanInput{
+		TableName: &tableName,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error scanning DynamoDB: %w", err)
+	}
+
+	var posts []models.Post
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &posts)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling posts: %w", err)
+	}
+
+	return posts, nil
+}
+
 func getPosts(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Lista de posts desde GitHub Actions")
+	posts, err := getAllPosts(r.Context())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error obteniendo posts: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(posts); err != nil {
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func createPost(w http.ResponseWriter, r *http.Request) {
