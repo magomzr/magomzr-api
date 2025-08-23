@@ -41,4 +41,4 @@ jobs:
       - name: Deploy to AWS Lambda
         run: |
           cd cmd
-          aws lambda update-function-code --function-name go-lambda-cicd --zip-file fileb://function.zip
+          aws lambda update-function-code --function-name magomzr-api --zip-file fileb://function.zip
