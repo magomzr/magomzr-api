@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -27,6 +28,7 @@ func authMiddleware(next http.Handler) http.Handler {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("CORS middleware: %s %s", r.Method, r.URL.Path)
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -34,6 +36,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		// Handle preflight requests
 		if r.Method == "OPTIONS" {
+			log.Printf("Handling OPTIONS preflight request for %s", r.URL.Path)
 			w.WriteHeader(http.StatusOK)
 			return
 		}
