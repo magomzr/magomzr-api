@@ -11,19 +11,20 @@ import (
 )
 
 var (
-	userSecretEnv = os.Getenv("UserSecretKey")
-	audience      = os.Getenv("Audience")
-	issuer        = os.Getenv("Issuer")
+	validationToken = os.Getenv("ValidationToken")
+	userSecretEnv   = os.Getenv("UserSecretKey")
+	audience        = os.Getenv("Audience")
+	issuer          = os.Getenv("Issuer")
 )
 
-func GenerateKey(userSecretKey string) (string, error) {
-	if userSecretEnv == "" {
-		log.Printf("The userSecret env variable is empty")
-		return "", errors.New("please provide a user secret variable")
+func GenerateKey(tokenFromUser string) (string, error) {
+	if validationToken == "" || userSecretEnv == "" {
+		log.Printf("Some tokens are missing or invalid")
+		return "", errors.New("please provide the user secret variables")
 	}
 
-	if userSecretKey != userSecretEnv {
-		log.Printf("The userSecret is either expired or invalid")
+	if tokenFromUser != validationToken {
+		log.Printf("The given token is either expired or invalid")
 	}
 
 	claims := jwt.MapClaims{
@@ -34,7 +35,7 @@ func GenerateKey(userSecretKey string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(os.Getenv("UserSecretKey")))
+	tokenString, err := token.SignedString([]byte(userSecretEnv))
 	if err != nil {
 		return "", err
 	}

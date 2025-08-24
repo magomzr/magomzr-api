@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -15,7 +17,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/magomzr/magomzr-api/handlers"
 	"github.com/magomzr/magomzr-api/models"
-	"github.com/magomzr/magomzr-api/pkg"
 )
 
 var dynamoClient *dynamodb.Client
@@ -116,14 +117,17 @@ func generateToken(w http.ResponseWriter, r *http.Request) {
 	}
 	secretKey := reqBody.SecretKey
 
-	token, err := pkg.GenerateKey(secretKey)
+	token, err := handlers.GenerateKey(secretKey)
 	if err != nil {
-		http.Error(w, "key generation failed", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("error generating token: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
+		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func buildRouter() *chi.Mux {
@@ -145,11 +149,20 @@ func buildRouter() *chi.Mux {
 func handler(ctx context.Context, req events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
 	router := buildRouter()
 
-	// Convert Lambda request → HTTP request
-	httpReq, err := http.NewRequest(req.RequestContext.HTTP.Method, req.RawPath, nil)
+	// Create request body from Lambda request
+	var body io.Reader
+	if req.Body != "" {
+		body = strings.NewReader(req.Body)
+	}
+
+	// Convert Lambda request → HTTP request WITH body
+	httpReq, err := http.NewRequest(req.RequestContext.HTTP.Method, req.RawPath, body)
 	if err != nil {
 		return events.LambdaFunctionURLResponse{StatusCode: 500, Body: "Error creando request"}, nil
 	}
+
+	// Add context
+	httpReq = httpReq.WithContext(ctx)
 
 	// Copiar headers
 	for k, v := range req.Headers {
