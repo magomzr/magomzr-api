@@ -25,6 +25,7 @@ func GenerateKey(tokenFromUser string) (string, error) {
 
 	if tokenFromUser != validationToken {
 		log.Printf("The given token is either expired or invalid")
+		return "", errors.New("please verify your token")
 	}
 
 	claims := jwt.MapClaims{
