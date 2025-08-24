@@ -132,7 +132,6 @@ func generateToken(w http.ResponseWriter, r *http.Request) {
 
 func buildRouter() *chi.Mux {
 	r := chi.NewRouter()
-	r.Use(corsMiddleware)
 
 	r.Get("/posts", getAllPosts)
 	r.Get("/posts/{id}", getPostById)
