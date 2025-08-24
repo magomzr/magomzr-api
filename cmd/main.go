@@ -14,6 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/go-chi/chi/v5"
 	"github.com/magomzr/magomzr-api/handlers"
+	"github.com/magomzr/magomzr-api/models"
+	"github.com/magomzr/magomzr-api/pkg"
 )
 
 var dynamoClient *dynamodb.Client
@@ -87,8 +89,41 @@ func getPostsByTag(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getDrafts(w http.ResponseWriter, r *http.Request) {
+	drafts, err := handlers.GetDrafts(r.Context(), dynamoClient)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error getting drafts: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(drafts); err != nil {
+		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		return
+	}
+}
+
 func createPost(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Post creado")
+}
+
+func generateToken(w http.ResponseWriter, r *http.Request) {
+	var reqBody models.ReqBody
+
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+	secretKey := reqBody.SecretKey
+
+	token, err := pkg.GenerateKey(secretKey)
+	if err != nil {
+		http.Error(w, "key generation failed", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
 func buildRouter() *chi.Mux {
@@ -97,7 +132,13 @@ func buildRouter() *chi.Mux {
 	r.Get("/posts/{id}", getPostById)
 	r.Get("/tags", GetTags)
 	r.Get("/tags/{tag}", getPostsByTag)
-	r.Post("/posts", createPost)
+	r.Post("/token", generateToken)
+
+	r.Group(func(r chi.Router) {
+		r.Use(authMiddleware)
+		r.Get("/drafts", getDrafts)
+		r.Post("/posts", createPost)
+	})
 	return r
 }
 

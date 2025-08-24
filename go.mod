@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.8.6
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.49.1
 	github.com/go-chi/chi/v5 v5.0.8
+	github.com/golang-jwt/jwt/v5 v5.3.0
 )
 
 require (
