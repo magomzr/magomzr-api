@@ -104,11 +104,13 @@ func SavePost(ctx context.Context, dynamoClient *dynamodb.Client, post *models.P
 	currentDatetime := time.Now().Format(time.RFC3339)
 
 	if isNew {
+		post.GenerateId()
 		post.CreateDate = currentDatetime
 	} else {
 		post.ModifiedDate = currentDatetime
 	}
 
+	post.TagsToLower()
 	item, err := attributevalue.MarshalMap(post)
 
 	if err != nil {

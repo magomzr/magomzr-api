@@ -1,5 +1,11 @@
 package models
 
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
+
 type Post struct {
 	Card
 	Author       string `json:"author"`
@@ -25,3 +31,18 @@ type Info struct {
 }
 
 type Tags map[string]int
+
+func (p *Post) GenerateId() {
+	id := uuid.New().String()
+	id = strings.ReplaceAll(id, "-", "")
+	if len(id) > 24 {
+		id = id[:24]
+	}
+	p.ID = id
+}
+
+func (p *Post) TagsToLower() {
+	for i, tag := range p.Tags {
+		p.Tags[i] = strings.ToLower(tag)
+	}
+}
