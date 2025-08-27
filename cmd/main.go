@@ -133,6 +133,11 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 
 func updatePost(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "post ID is required", http.StatusBadRequest)
+		return
+	}
+
 	var post models.Post
 
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {

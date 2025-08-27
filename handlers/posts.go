@@ -107,7 +107,15 @@ func SavePost(ctx context.Context, dynamoClient *dynamodb.Client, post *models.P
 		post.GenerateId()
 		post.CreateDate = currentDatetime
 	} else {
+		if post.ID == "" {
+			return false, fmt.Errorf("id is required for updating posts: %v", post.ID)
+		}
 		post.ModifiedDate = currentDatetime
+	}
+
+	// Additional validation
+	if post.ID == "" {
+		return false, fmt.Errorf("post ID cannot be empty: %v", post.ID)
 	}
 
 	post.TagsToLower()
