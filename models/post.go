@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -39,6 +40,9 @@ func (p *Post) GenerateId() {
 		id = id[:24]
 	}
 	p.ID = id
+
+	// DEBUG
+	fmt.Printf("Generated ID: %s\n", p.ID)
 }
 
 func (p *Post) TagsToLower() {

@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types" // DEBUG
 	"github.com/magomzr/magomzr-api/models"
 )
 
@@ -111,10 +112,19 @@ func SavePost(ctx context.Context, dynamoClient *dynamodb.Client, post *models.P
 	}
 
 	post.TagsToLower()
+
+	// DEBUG
+	fmt.Printf("Post before marshaling - ID: %s, Title: %s\n", post.ID, post.Title)
+
 	item, err := attributevalue.MarshalMap(post)
 
 	if err != nil {
 		return false, fmt.Errorf("error marshaling post: %w", err)
+	}
+
+	// DEBUG
+	if _, exists := item["id"]; !exists {
+		return false, fmt.Errorf("marshaled item is missing 'id' key. Available keys: %v", getKeys(item))
 	}
 
 	_, err = dynamoClient.PutItem(ctx, &dynamodb.PutItemInput{
@@ -127,4 +137,13 @@ func SavePost(ctx context.Context, dynamoClient *dynamodb.Client, post *models.P
 	}
 
 	return true, nil
+}
+
+// DEBUG
+func getKeys(item map[string]types.AttributeValue) []string {
+	keys := make([]string, 0, len(item))
+	for k := range item {
+		keys = append(keys, k)
+	}
+	return keys
 }
