@@ -19,7 +19,14 @@ import (
 	"github.com/magomzr/magomzr-api/models"
 )
 
-var dynamoClient *dynamodb.Client
+var (
+	dynamoClient   *dynamodb.Client
+	postsPath      = "/posts"
+	contentType    = "Content-Type"
+	encodingError  = "error encoding response"
+	appJson        = "application/json"
+	invalidReqBody = "invalid request body"
+)
 
 func init() {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
@@ -39,9 +46,9 @@ func getAllPosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentType, appJson)
 	if err := json.NewEncoder(w).Encode(cards); err != nil {
-		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		http.Error(w, encodingError, http.StatusInternalServerError)
 		return
 	}
 }
@@ -54,9 +61,9 @@ func getPostById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentType, appJson)
 	if err := json.NewEncoder(w).Encode(post); err != nil {
-		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		http.Error(w, encodingError, http.StatusInternalServerError)
 		return
 	}
 }
@@ -68,9 +75,9 @@ func GetTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentType, appJson)
 	if err := json.NewEncoder(w).Encode(tags); err != nil {
-		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		http.Error(w, encodingError, http.StatusInternalServerError)
 		return
 	}
 }
@@ -83,9 +90,9 @@ func getPostsByTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentType, appJson)
 	if err := json.NewEncoder(w).Encode(posts); err != nil {
-		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		http.Error(w, encodingError, http.StatusInternalServerError)
 		return
 	}
 }
@@ -97,22 +104,58 @@ func getDrafts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentType, appJson)
 	if err := json.NewEncoder(w).Encode(drafts); err != nil {
-		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		http.Error(w, encodingError, http.StatusInternalServerError)
 		return
 	}
 }
 
 func createPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Post creado")
+	var post models.Post
+
+	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+		http.Error(w, invalidReqBody, http.StatusBadRequest)
+		return
+	}
+
+	ok, err := handlers.SavePost(r.Context(), dynamoClient, &post, true)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error creating post: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set(contentType, appJson)
+	if err := json.NewEncoder(w).Encode(ok); err != nil {
+		http.Error(w, "error encoding response: %w", http.StatusInternalServerError)
+	}
+}
+
+func updatePost(w http.ResponseWriter, r *http.Request) {
+	var post models.Post
+
+	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+		http.Error(w, invalidReqBody, http.StatusBadRequest)
+		return
+	}
+
+	ok, err := handlers.SavePost(r.Context(), dynamoClient, &post, false)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error updating post: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set(contentType, appJson)
+	if err := json.NewEncoder(w).Encode(ok); err != nil {
+		http.Error(w, "error encoding response: %w", http.StatusInternalServerError)
+	}
 }
 
 func generateToken(w http.ResponseWriter, r *http.Request) {
 	var reqBody models.ReqBody
 
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		http.Error(w, invalidReqBody, http.StatusBadRequest)
 		return
 	}
 	secretKey := reqBody.SecretKey
@@ -123,9 +166,9 @@ func generateToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentType, appJson)
 	if err := json.NewEncoder(w).Encode(map[string]string{"token": token}); err != nil {
-		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		http.Error(w, encodingError, http.StatusInternalServerError)
 		return
 	}
 }
@@ -133,8 +176,8 @@ func generateToken(w http.ResponseWriter, r *http.Request) {
 func buildRouter() *chi.Mux {
 	r := chi.NewRouter()
 
-	r.Get("/posts", getAllPosts)
-	r.Get("/posts/{id}", getPostById)
+	r.Get(postsPath, getAllPosts)
+	r.Get(postsPath+"/{id}", getPostById)
 	r.Get("/tags", GetTags)
 	r.Get("/tags/{tag}", getPostsByTag)
 	r.Post("/token", generateToken)
@@ -142,7 +185,8 @@ func buildRouter() *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Use(authMiddleware)
 		r.Get("/drafts", getDrafts)
-		r.Post("/posts", createPost)
+		r.Post(postsPath, createPost)
+		r.Put(postsPath, updatePost)
 	})
 	return r
 }

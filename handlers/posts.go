@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
@@ -10,11 +11,13 @@ import (
 	"github.com/magomzr/magomzr-api/models"
 )
 
+var (
+	tableName = "posts"
+)
+
 // To avoid returning all posts data, this method just maps
 // the relevant fields using the Card struct.
 func GetAllPosts(ctx context.Context, dynamoClient *dynamodb.Client) ([]models.Card, error) {
-	tableName := "posts"
-
 	filt := expression.Name("isDraft").Equal(expression.Value(false))
 	expr, err := expression.NewBuilder().WithFilter(filt).Build()
 	if err != nil {
@@ -41,8 +44,6 @@ func GetAllPosts(ctx context.Context, dynamoClient *dynamodb.Client) ([]models.C
 }
 
 func GetPostById(ctx context.Context, dynamoClient *dynamodb.Client, id string) (*models.Post, error) {
-	tableName := "posts"
-
 	filt := expression.Name("isDraft").Equal(expression.Value(false))
 	expr, err := expression.NewBuilder().WithFilter(filt).Build()
 	if err != nil {
@@ -96,4 +97,32 @@ func GetPostById(ctx context.Context, dynamoClient *dynamodb.Client, id string) 
 	}
 
 	return &currentPost, nil
+}
+
+// Create (or update) posts.
+func SavePost(ctx context.Context, dynamoClient *dynamodb.Client, post *models.Post, isNew bool) (bool, error) {
+	currentDatetime := time.Now().Format(time.RFC3339)
+
+	if isNew {
+		post.CreateDate = currentDatetime
+	} else {
+		post.ModifiedDate = currentDatetime
+	}
+
+	item, err := attributevalue.MarshalMap(post)
+
+	if err != nil {
+		return false, fmt.Errorf("error marshaling post: %w", err)
+	}
+
+	_, err = dynamoClient.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: &tableName,
+		Item:      item,
+	})
+
+	if err != nil {
+		return false, fmt.Errorf("error saving post: %w", err)
+	}
+
+	return true, nil
 }
