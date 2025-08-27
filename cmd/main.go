@@ -132,6 +132,7 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func updatePost(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
 	var post models.Post
 
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
@@ -146,7 +147,7 @@ func updatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set(contentType, appJson)
-	if err := json.NewEncoder(w).Encode(ok); err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]any{"id": id, "ok": ok}); err != nil {
 		http.Error(w, "error encoding response: %w", http.StatusInternalServerError)
 	}
 }
@@ -186,7 +187,7 @@ func buildRouter() *chi.Mux {
 		r.Use(authMiddleware)
 		r.Get("/drafts", getDrafts)
 		r.Post(postsPath, createPost)
-		r.Put(postsPath, updatePost)
+		r.Put(postsPath+"/{id}", updatePost)
 	})
 	return r
 }
