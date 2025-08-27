@@ -133,12 +133,19 @@ func createPost(w http.ResponseWriter, r *http.Request) {
 
 func updatePost(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "post ID is required in URL", http.StatusBadRequest)
+		return
+	}
+
 	var post models.Post
 
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
 		http.Error(w, invalidReqBody, http.StatusBadRequest)
 		return
 	}
+
+	post.ID = id
 
 	ok, err := handlers.SavePost(r.Context(), dynamoClient, &post, false)
 	if err != nil {
