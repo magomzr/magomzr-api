@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -9,26 +8,26 @@ import (
 
 type Post struct {
 	Card
-	Author       string `json:"author"`
-	Content      string `json:"content"`
-	IsDraft      bool   `json:"isDraft"`
-	Layout       string `json:"layout"`
-	ModifiedDate string `json:"modifiedDate"`
-	Previous     Info   `json:"previous"`
-	Next         Info   `json:"next"`
+	Author       string `json:"author" dynamodbav:"author"`
+	Content      string `json:"content" dynamodbav:"content"`
+	IsDraft      bool   `json:"isDraft" dynamodbav:"isDraft"`
+	Layout       string `json:"layout" dynamodbav:"layout"`
+	ModifiedDate string `json:"modifiedDate" dynamodbav:"modifiedDate"`
+	Previous     Info   `json:"previous" dynamodbav:"previous"`
+	Next         Info   `json:"next" dynamodbav:"next"`
 }
 
 type Card struct {
-	ID         string   `json:"id"`
-	CreateDate string   `json:"createDate"`
-	Title      string   `json:"title"`
-	Summary    string   `json:"summary"`
-	Tags       []string `json:"tags"`
+	ID         string   `json:"id" dynamodbav:"id"`
+	CreateDate string   `json:"createDate" dynamodbav:"createDate"`
+	Title      string   `json:"title" dynamodbav:"title"`
+	Summary    string   `json:"summary" dynamodbav:"summary"`
+	Tags       []string `json:"tags" dynamodbav:"tags"`
 }
 
 type Info struct {
-	Title string `json:"title"`
-	ID    string `json:"id"`
+	Title string `json:"title" dynamodbav:"title"`
+	ID    string `json:"id" dynamodbav:"id"`
 }
 
 type Tags map[string]int
@@ -40,9 +39,6 @@ func (p *Post) GenerateId() {
 		id = id[:24]
 	}
 	p.ID = id
-
-	// DEBUG
-	fmt.Printf("Generated ID: %s\n", p.ID)
 }
 
 func (p *Post) TagsToLower() {
