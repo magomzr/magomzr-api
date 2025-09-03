@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"github.com/magomzr/magomzr-api/pkg"
+	i "github.com/magomzr/magomzr-api/internal"
 )
 
 func GenerateKey(secretKey string) (string, error) {
-	token, err := pkg.GenerateKey(secretKey)
+	token, err := i.GenerateKey(secretKey)
 	if err != nil {
 		return "", err
 	}

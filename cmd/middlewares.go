@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/magomzr/magomzr-api/pkg"
+	i "github.com/magomzr/magomzr-api/internal"
 )
 
 func authMiddleware(next http.Handler) http.Handler {
@@ -15,7 +15,7 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		valid, err := pkg.ValidateToken(authHeader)
+		valid, err := i.ValidateToken(authHeader)
 		if err != nil || !valid {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
