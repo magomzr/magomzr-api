@@ -20,7 +20,10 @@ import (
 )
 
 var (
-	dynamoClient   *dynamodb.Client
+	dynamoClient *dynamodb.Client
+)
+
+const (
 	postsPath      = "/posts"
 	contentType    = "Content-Type"
 	encodingError  = "error encoding response"
