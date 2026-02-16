@@ -32,7 +32,7 @@ type Info struct {
 
 type Tags map[string]int
 
-func (p *Post) GenerateId() {
+func (p *Post) GenerateID() {
 	id := uuid.New().String()
 	id = strings.ReplaceAll(id, "-", "")
 	if len(id) > 24 {

@@ -12,8 +12,6 @@ import (
 )
 
 func GetDrafts(ctx context.Context, dynamoClient *dynamodb.Client) ([]models.Post, error) {
-	tableName := "posts"
-
 	filt := expression.Name("isDraft").Equal(expression.Value(true))
 	expr, err := expression.NewBuilder().WithFilter(filt).Build()
 	if err != nil {
